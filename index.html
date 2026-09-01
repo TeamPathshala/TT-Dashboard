@@ -139,7 +139,6 @@
 
     tr:hover { background: var(--hover-bg); }
 
-    /* Badge Style for Colored Numbers and Highlights */
     .badge { 
       display: inline-block; 
       padding: 5px 12px; 
@@ -198,7 +197,6 @@
     <div id="fileNote" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;"></div>
   </div>
 
-  <!-- Dynamic Threshold Settings Bar -->
   <div class="target-box">
     <span style="font-size:0.9rem; font-weight:800; color:var(--accent);">⚙️ Set Defaulter Limits:</span>
     
@@ -288,7 +286,6 @@
     </table>
   </div>
 
-  <!-- Defaulters Detailed Table Section -->
   <div id="defaulterSection" class="table-wrapper" style="display: none;">
     <table>
       <thead>
@@ -454,8 +451,18 @@
 
     let teamMembers = JSON.parse(localStorage.getItem('teamMembers')) || DEFAULT_TEAM;
     let teamName = localStorage.getItem('teamName') || "Jaipur Team";
-    let rawDump = JSON.parse(localStorage.getItem('productivity_dataset')) || [];
-    let rawBreakLogs = JSON.parse(localStorage.getItem('break_logs')) || [];
+    
+    // Automatic Storage Load Logic
+    let rawDump = [];
+    let rawBreakLogs = [];
+    try {
+      const savedDump = localStorage.getItem('productivity_dataset');
+      const savedBreaks = localStorage.getItem('break_logs');
+      if (savedDump) rawDump = JSON.parse(savedDump);
+      if (savedBreaks) rawBreakLogs = JSON.parse(savedBreaks);
+    } catch (e) {
+      console.error("Error reading saved data from storage", e);
+    }
 
     let currentTab = 'productivity';
     let sortKey = 'totalTT';
@@ -614,7 +621,7 @@
       const visibleCols = ALL_COLUMNS.filter(col => columnVisibility[col.id]);
 
       if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="${visibleCols.length}" style="text-align:center; padding:20px; font-weight:600;">No matching records found.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="${visibleCols.length}" style="text-align:center; padding:20px; font-weight:600;">No matching records found or CSV not uploaded yet.</td></tr>`;
         return;
       }
 
@@ -625,24 +632,19 @@
             case 'rank': cellsHTML += `<td class="bold-data">${i + 1}</td>`; break;
             case 'name': cellsHTML += `<td class="name-cell"><span class="name">${a.name || a.email}</span><span class="mail">${a.email}</span></td>`; break;
             case 'status': cellsHTML += `<td><span class="badge ${a.statusColor}">${a.status}</span></td>`; break;
-            
-            /* Total TT Color Formatting Fixed Here */
             case 'totalTT': {
               const tTT = a.totalTT || 0;
               let tClass = tTT >= limits.totalSecs ? 'badge green' : 'badge red';
               cellsHTML += `<td><span class="${tClass}">${fmtHMS(tTT)}</span></td>`;
               break;
             }
-
             case 'autoTT': cellsHTML += `<td class="muted-data">${fmtHMS(a.autoTT || 0)}</td>`; break;
-            
             case 'manualTT': {
               const mTT = a.manualTT || 0;
               let mClass = mTT >= limits.manualSecs ? 'badge green' : 'badge red';
               cellsHTML += `<td><span class="${mClass}">${fmtHMS(mTT)}</span></td>`;
               break;
             }
-
             case 'idle': cellsHTML += `<td class="muted-data">${fmtHMS(a.idle)}</td>`; break;
             case 'break10': cellsHTML += `<td><span class="badge ${a.break10 > 0 ? 'blue' : ''}">${a.break10 || 0}</span></td>`; break;
             case 'break20': cellsHTML += `<td><span class="badge ${a.break20 > 0 ? 'yellow' : ''}">${a.break20 || 0}</span></td>`; break;
@@ -717,7 +719,7 @@
 
       const tbody = document.getElementById('defaulterTbody');
       if (defaultersList.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; font-weight:600; color:var(--green-text);">🎉 Great Job! Sabhi logon ne targets poore kiye hain.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; font-weight:600; color:var(--green-text);">🎉 Great Job! All targets met.</td></tr>`;
         return;
       }
 
@@ -835,8 +837,11 @@
 
           rawDump = processedSummary;
           rawBreakLogs = allBreakLogs;
+
+          // Save to LocalStorage permanently until overwritten
           localStorage.setItem('productivity_dataset', JSON.stringify(rawDump));
           localStorage.setItem('break_logs', JSON.stringify(rawBreakLogs));
+
           document.getElementById('fileNote').textContent = `Loaded ${rows.length} call logs successfully!`;
           render();
         }

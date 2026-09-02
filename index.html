@@ -201,7 +201,7 @@
     <span style="font-size:0.9rem; font-weight:800; color:var(--accent);">⚙️ Set Defaulter Limits:</span>
     
     <div class="target-input-item">
-      <label>Target Eff. Calls (>240s):</label>
+      <label>Target Eff. (>240s):</label>
       <input type="number" id="limitEffCalls" value="25" min="1" />
     </div>
 
@@ -221,6 +221,7 @@
   <div class="tabs">
     <button class="tab-btn active" id="tabProductivityBtn" onclick="switchTab('productivity')">Productivity Summary</button>
     <button class="tab-btn" id="tabBreaksBtn" onclick="switchTab('breaks')">Detailed Break Logs</button>
+    <button class="tab-btn" id="tabManualBtn" onclick="switchTab('manual')">Manual TT Performance</button>
     <button class="tab-btn defaulter-tab" id="tabDefaultersBtn" onclick="switchTab('defaulters')">⚠️ Defaulters List</button>
   </div>
 
@@ -286,6 +287,23 @@
     </table>
   </div>
 
+  <div id="manualSection" class="table-wrapper" style="display: none;">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Counsellor</th>
+          <th>Manual Dial</th>
+          <th>Manual Connect</th>
+          <th>Connect %</th>
+          <th>Manual Effective (>240s)</th>
+          <th>Manual TT</th>
+        </tr>
+      </thead>
+      <tbody id="manualTbody"></tbody>
+    </table>
+  </div>
+
   <div id="defaulterSection" class="table-wrapper" style="display: none;">
     <table>
       <thead>
@@ -294,7 +312,7 @@
           <th>Counsellor</th>
           <th id="defThTotalTT">Total TT</th>
           <th id="defThManualTT">Manual TT</th>
-          <th id="defThEff">Effective Connect</th>
+          <th id="defThEff">Total Effective Connect</th>
           <th>Failed Reason / Remarks</th>
         </tr>
       </thead>
@@ -406,7 +424,7 @@
       { id: 'break50', label: '50m+ Breaks', default: true },
       { id: 'totalDialed', label: 'Total Dialed', default: true },
       { id: 'totalConnected', label: 'Total Connected', default: true },
-      { id: 'effConnect', label: 'Effective Connect >240', default: true },
+      { id: 'effConnect', label: 'Total Eff Connect >240s', default: true },
       { id: 'autoDials', label: 'Auto Dials', default: true },
       { id: 'manualDials', label: 'Manual Dials', default: true },
       { id: 'firstCall', label: '1st Call Time', default: true },
@@ -451,8 +469,7 @@
 
     let teamMembers = JSON.parse(localStorage.getItem('teamMembers')) || DEFAULT_TEAM;
     let teamName = localStorage.getItem('teamName') || "Jaipur Team";
-    
-    // Automatic Storage Load Logic
+
     let rawDump = [];
     let rawBreakLogs = [];
     try {
@@ -461,7 +478,7 @@
       if (savedDump) rawDump = JSON.parse(savedDump);
       if (savedBreaks) rawBreakLogs = JSON.parse(savedBreaks);
     } catch (e) {
-      console.error("Error reading saved data from storage", e);
+      console.error("Error loading saved data from storage", e);
     }
 
     let currentTab = 'productivity';
@@ -543,10 +560,12 @@
       currentTab = tab;
       document.getElementById('tabProductivityBtn').classList.toggle('active', tab === 'productivity');
       document.getElementById('tabBreaksBtn').classList.toggle('active', tab === 'breaks');
+      document.getElementById('tabManualBtn').classList.toggle('active', tab === 'manual');
       document.getElementById('tabDefaultersBtn').classList.toggle('active', tab === 'defaulters');
       
       document.getElementById('productivitySection').style.display = tab === 'productivity' ? 'block' : 'none';
       document.getElementById('breakSection').style.display = tab === 'breaks' ? 'block' : 'none';
+      document.getElementById('manualSection').style.display = tab === 'manual' ? 'block' : 'none';
       document.getElementById('defaulterSection').style.display = tab === 'defaulters' ? 'block' : 'none';
 
       document.getElementById('statusFilterWrapper').style.display = tab === 'productivity' ? 'flex' : 'none';
@@ -572,7 +591,7 @@
       document.getElementById('tabDefaultersBtn').textContent = `⚠️ Defaulters List (<${limits.eff} Eff / <${limits.manualMins}m Manual / <${limits.totalMins}m Total TT)`;
       document.getElementById('defThTotalTT').textContent = `Total TT (Target: ${limits.totalMins}m)`;
       document.getElementById('defThManualTT').textContent = `Manual TT (Target: ${limits.manualMins}m)`;
-      document.getElementById('defThEff').textContent = `Effective Connect (Target: ${limits.eff}+)`;
+      document.getElementById('defThEff').textContent = `Total Eff Connect (Target: ${limits.eff}+)`;
 
       const data = getProcessedData();
       const search = document.getElementById('searchBox').value.toLowerCase().trim();
@@ -594,6 +613,8 @@
         renderProductivityTable(data, search);
       } else if (currentTab === 'breaks') {
         renderBreakTable(search);
+      } else if (currentTab === 'manual') {
+        renderManualTable(data, search);
       } else if (currentTab === 'defaulters') {
         renderDefaulterTabTable(data, search);
       }
@@ -702,6 +723,43 @@
       }).join('');
     }
 
+    function renderManualTable(data, search) {
+      const limits = getTargetLimits();
+      let filtered = data;
+      if (search) {
+        filtered = filtered.filter(a => (a.name || '').toLowerCase().includes(search) || a.email.toLowerCase().includes(search));
+      }
+
+      const tbody = document.getElementById('manualTbody');
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; font-weight:600;">No data found.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map((a, i) => {
+        const mTT = a.manualTT || 0;
+        const mDial = a.manualDials || 0;
+        const mConn = a.manualConnect || 0;
+        const manualEff = a.manualEffConnect || 0;
+        const connPct = mDial > 0 ? ((mConn / mDial) * 100).toFixed(1) + '%' : '0.0%';
+
+        const mClass = mTT >= limits.manualSecs ? 'badge green' : 'badge red';
+        const effClass = manualEff >= limits.eff ? 'badge green' : 'badge red';
+
+        return `
+          <tr>
+            <td class="bold-data">${i + 1}</td>
+            <td class="name-cell"><span class="name">${a.name || a.email}</span><span class="mail">${a.email}</span></td>
+            <td class="bold-data">${mDial}</td>
+            <td class="bold-data" style="color:var(--green-text);">${mConn}</td>
+            <td class="bold-data">${connPct}</td>
+            <td><span class="${effClass}">${manualEff}</span></td>
+            <td><span class="${mClass}">${fmtHMS(mTT)}</span></td>
+          </tr>
+        `;
+      }).join('');
+    }
+
     function renderDefaulterTabTable(data, search) {
       const limits = getTargetLimits();
       
@@ -727,7 +785,7 @@
         let reasons = [];
         if (a.totalTT < limits.totalSecs) reasons.push(`Total TT < ${limits.totalMins}m`);
         if ((a.manualTT || 0) < limits.manualSecs) reasons.push(`Manual TT < ${limits.manualMins}m`);
-        if (a.effConnect < limits.eff) reasons.push(`Effective Connect < ${limits.eff}`);
+        if (a.effConnect < limits.eff) reasons.push(`Total Eff Connect < ${limits.eff}`);
 
         const reasonText = reasons.join(" | ");
 
@@ -782,24 +840,31 @@
             const name = matchedMember ? matchedMember.name : calls[0].rawUser;
 
             let totalTT = 0, autoTT = 0, manualTT = 0;
-            let totalDialed = calls.length, totalConnected = 0, effConnect = 0;
-            let autoDials = 0, manualDials = 0;
+            let totalDialed = calls.length, totalConnected = 0, effConnect = 0, manualEffConnect = 0;
+            let autoDials = 0, manualDials = 0, manualConnect = 0;
             let break10 = 0, break20 = 0, break30 = 0, break40 = 0, break50 = 0;
 
             let prevCallEndTime = null;
 
             calls.forEach(c => {
               totalTT += c.ttSec;
-              if (c.dialType.includes('AUTO')) {
+              const isManual = !c.dialType.includes('AUTO');
+
+              // Total Effective Calls (>240s) across all calls
+              if (c.ttSec >= 240) effConnect++;
+
+              if (!isManual) {
                 autoDials++;
                 autoTT += c.ttSec;
               } else {
                 manualDials++;
                 manualTT += c.ttSec;
+                if (c.sysDisp === 'CONNECTED') manualConnect++;
+                // Manual Effective Calls (>240s) only for Manual Dials
+                if (c.ttSec >= 240) manualEffConnect++;
               }
 
               if (c.sysDisp === 'CONNECTED') totalConnected++;
-              if (c.ttSec >= 240) effConnect++;
 
               if (prevCallEndTime) {
                 const gapMinutes = (c.dt.getTime() - prevCallEndTime.getTime()) / (1000 * 60);
@@ -827,8 +892,8 @@
             });
 
             processedSummary.push({
-              email, name, totalTT, autoTT, manualTT, totalDialed, totalConnected, effConnect,
-              autoDials, manualDials,
+              email, name, totalTT, autoTT, manualTT, totalDialed, totalConnected, effConnect, manualEffConnect,
+              autoDials, manualDials, manualConnect,
               firstCall: calls[0].dt.toISOString(),
               lastCall: calls[calls.length - 1].dt.toISOString(),
               break10, break20, break30, break40, break50
@@ -838,7 +903,7 @@
           rawDump = processedSummary;
           rawBreakLogs = allBreakLogs;
 
-          // Save to LocalStorage permanently until overwritten
+          // Storage Update logic
           localStorage.setItem('productivity_dataset', JSON.stringify(rawDump));
           localStorage.setItem('break_logs', JSON.stringify(rawBreakLogs));
 
@@ -1081,9 +1146,9 @@
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF('l', 'mm', 'a4');
       const limits = getTargetLimits();
+      const data = getProcessedData();
 
       if (currentTab === 'productivity') {
-        const data = getProcessedData();
         const visibleCols = ALL_COLUMNS.filter(col => columnVisibility[col.id]);
         doc.text(`${teamName} - Productivity & Summary Report`, 14, 15);
         doc.autoTable({
@@ -1121,17 +1186,28 @@
           body: rawBreakLogs.map((b, i) => [i + 1, b.name, b.start, b.end, `${b.duration} mins`, b.category]),
           startY: 20
         });
+      } else if (currentTab === 'manual') {
+        doc.text(`${teamName} - Manual TT Performance Report`, 14, 15);
+        doc.autoTable({
+          head: [['#', 'Counsellor', 'Manual Dial', 'Manual Connect', 'Connect %', 'Manual Effective (>240s)', 'Manual TT']],
+          body: data.map((a, i) => {
+            const mDial = a.manualDials || 0;
+            const mConn = a.manualConnect || 0;
+            const connPct = mDial > 0 ? ((mConn / mDial) * 100).toFixed(1) + '%' : '0.0%';
+            return [i + 1, a.name || a.email, mDial, mConn, connPct, a.manualEffConnect || 0, fmtHMS(a.manualTT || 0)];
+          }),
+          startY: 20
+        });
       } else if (currentTab === 'defaulters') {
-        const data = getProcessedData();
         let defaultersList = data.filter(a => a.effConnect < limits.eff || (a.manualTT || 0) < limits.manualSecs || a.totalTT < limits.totalSecs);
         doc.text(`${teamName} - Defaulters List Report`, 14, 15);
         doc.autoTable({
-          head: [['#', 'Counsellor', 'Total TT', 'Manual TT', 'Effective Connect', 'Remarks']],
+          head: [['#', 'Counsellor', 'Total TT', 'Manual TT', 'Total Eff Connect', 'Remarks']],
           body: defaultersList.map((a, i) => {
             let reasons = [];
             if (a.totalTT < limits.totalSecs) reasons.push(`Total TT < ${limits.totalMins}m`);
             if ((a.manualTT || 0) < limits.manualSecs) reasons.push(`Manual TT < ${limits.manualMins}m`);
-            if (a.effConnect < limits.eff) reasons.push(`Eff Connect < ${limits.eff}`);
+            if (a.effConnect < limits.eff) reasons.push(`Total Eff Connect < ${limits.eff}`);
             return [i + 1, a.name || a.email, fmtHMS(a.totalTT), fmtHMS(a.manualTT || 0), a.effConnect, reasons.join(" | ")];
           }),
           startY: 20

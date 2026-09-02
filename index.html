@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Hourly Productivity & Break Dashboard</title>
   
+  <!-- Google Fonts & FontAwesome -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
   <!-- CDNs for Papaparse, jsPDF, and AutoTable -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -13,171 +19,339 @@
   <style>
     /* Dark Theme Variables */
     [data-theme="dark"] {
-      --bg: #0f172a;
-      --card-bg: #1e293b;
-      --table-header: #0f172a;
-      --header-text: #f8fafc;
-      --border: #334155;
-      --text: #f8fafc;
-      --text-muted: #cbd5e1;
+      --bg: #0b0f19;
+      --card-bg: #151c2c;
+      --card-border: #1e293b;
+      --table-header: #fbbf24;
+      --header-text: #000000;
+      --border: #222f43;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
       --accent: #38bdf8;
       --accent-hover: #0284c7;
       --green-bg: #064e3b;
-      --green-text: #6ee7b7;
-      --red-bg: #7f1d1d;
-      --red-text: #fca5a5;
-      --yellow-bg: #78350f;
-      --yellow-text: #fde047;
+      --green-text: #34d399;
+      --red-bg: #451a1a;
+      --red-text: #f87171;
+      --yellow-bg: #451a03;
+      --yellow-text: #fbbf24;
       --blue-bg: #1e3a8a;
-      --blue-text: #93c5fd;
-      --hover-bg: rgba(255, 255, 255, 0.04);
+      --blue-text: #60a5fa;
+      --hover-bg: #1b2436;
+      --shadow: rgba(0, 0, 0, 0.4);
     }
 
     /* Light Theme Variables */
     [data-theme="light"] {
-      --bg: #f1f5f9;
+      --bg: #f8fafc;
       --card-bg: #ffffff;
-      --table-header: #e2e8f0;
-      --header-text: #0f172a;
-      --border: #cbd5e1;
+      --card-border: #e2e8f0;
+      --table-header: #facc15;
+      --header-text: #000000;
+      --border: #e2e8f0;
       --text: #0f172a;
-      --text-muted: #475569;
+      --text-muted: #64748b;
       --accent: #0284c7;
       --accent-hover: #0369a1;
-      --green-bg: #dcfce7;
-      --green-text: #15803d;
+      --green-bg: #d1fae5;
+      --green-text: #047857;
       --red-bg: #fee2e2;
-      --red-text: #b91c1c;
+      --red-text: #dc2626;
       --yellow-bg: #fef3c7;
       --yellow-text: #b45309;
       --blue-bg: #dbeafe;
       --blue-text: #1d4ed8;
-      --hover-bg: #f8fafc;
+      --hover-bg: #f1f5f9;
+      --shadow: rgba(0, 0, 0, 0.05);
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: var(--bg); color: var(--text); padding: 12px; font-size: 13px; transition: background-color 0.2s, color 0.2s; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    
+    body { 
+      background-color: var(--bg); 
+      color: var(--text); 
+      padding: 16px; 
+      font-size: 13px; 
+      transition: background-color 0.25s, color 0.25s;
+      min-height: 100vh;
+    }
 
-    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
-    h1 { font-size: 1.3rem; color: var(--text); font-weight: 700; }
+    header { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      margin-bottom: 16px; 
+      flex-wrap: wrap; 
+      gap: 12px;
+      background: var(--card-bg);
+      padding: 14px 20px;
+      border-radius: 10px;
+      border: 1px solid var(--card-border);
+      box-shadow: 0 4px 6px -1px var(--shadow);
+    }
+
+    h1 { 
+      font-size: 1.25rem; 
+      color: var(--text); 
+      font-weight: 800; 
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    h1::before {
+      content: '';
+      display: inline-block;
+      width: 4px;
+      height: 18px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
     
     .clock-card {
-      font-size: 0.95rem;
-      font-weight: 800;
-      color: #38bdf8;
-      background: var(--card-bg);
-      padding: 6px 12px;
-      border-radius: 6px;
-      border: 1px solid var(--border);
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--accent);
+      background: rgba(56, 189, 248, 0.08);
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid rgba(56, 189, 248, 0.2);
       display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .window-info { 
+      font-size: 0.8rem; 
+      font-weight: 600; 
+      color: #38bdf8; 
+      background: rgba(56, 189, 248, 0.1); 
+      padding: 6px 14px; 
+      border-radius: 20px; 
+      border: 1px solid rgba(56, 189, 248, 0.3); 
+    }
+
+    .kpis { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); 
+      gap: 12px; 
+      margin-bottom: 16px; 
+    }
+
+    .kpi { 
+      background: var(--card-bg); 
+      border: 1px solid var(--card-border); 
+      border-radius: 10px; 
+      padding: 14px 16px; 
+      box-shadow: 0 2px 4px var(--shadow);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .kpi:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px var(--shadow);
+    }
+
+    .kpi .label { 
+      font-size: 0.68rem; 
+      font-weight: 700; 
+      color: var(--text-muted); 
+      text-transform: uppercase; 
+      letter-spacing: 0.05em;
+      margin-bottom: 6px; 
+    }
+
+    .kpi .value { 
+      font-size: 1.4rem; 
+      font-weight: 800; 
+      letter-spacing: -0.03em;
+    }
+
+    .kpi .value.small { font-size: 1.1rem; }
+
+    .controls { 
+      display: flex; 
+      flex-wrap: wrap; 
+      gap: 10px; 
+      align-items: center; 
+      justify-content: space-between; 
+      margin-bottom: 16px; 
+      background: var(--card-bg); 
+      padding: 12px 16px; 
+      border-radius: 10px; 
+      border: 1px solid var(--card-border); 
+      box-shadow: 0 2px 4px var(--shadow);
+    }
+
+    .control-group { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    
+    input[type="text"], input[type="number"], select, input[type="color"] { 
+      background: var(--bg); 
+      border: 1px solid var(--border); 
+      color: var(--text); 
+      padding: 7px 12px; 
+      border-radius: 6px; 
+      outline: none; 
+      font-size: 0.8rem; 
+      font-weight: 500; 
+      transition: all 0.2s;
+    }
+
+    input[type="color"] { padding: 2px 4px; cursor: pointer; height: 32px; width: 38px; }
+    input[type="text"]:focus, input[type="number"]:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2); }
+    
+    .btn { 
+      background: var(--accent); 
+      color: #fff; 
+      font-weight: 700; 
+      border: none; 
+      padding: 8px 14px; 
+      border-radius: 6px; 
+      cursor: pointer; 
+      transition: all 0.2s; 
+      font-size: 0.8rem; 
+      display: inline-flex;
       align-items: center;
       gap: 6px;
     }
 
-    .window-info { font-size: 0.85rem; font-weight: 600; color: var(--accent); background: rgba(56, 189, 248, 0.1); padding: 5px 10px; border-radius: 6px; border: 1px solid var(--accent); }
-
-    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 12px; }
-    .kpi { background: var(--card-bg); border: 1px solid var(--border); border-radius: 6px; padding: 10px; }
-    .kpi .label { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 2px; }
-    .kpi .value { font-size: 1.3rem; font-weight: 800; }
-    .kpi .value.small { font-size: 1.05rem; }
-
-    .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 12px; background: var(--card-bg); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); }
-    .control-group { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    
-    input[type="text"], input[type="number"], select, input[type="color"] { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 6px 10px; border-radius: 4px; outline: none; font-size: 0.85rem; font-weight: 500; }
-    input[type="color"] { padding: 2px 4px; cursor: pointer; height: 32px; width: 40px; }
-    input[type="text"]:focus, input[type="number"]:focus, select:focus { border-color: var(--accent); }
-    
-    .btn { background: var(--accent); color: #fff; font-weight: 700; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; transition: 0.2s; font-size: 0.85rem; }
-    [data-theme="dark"] .btn { color: #000; }
-    .btn:hover { background: var(--accent-hover); color: #fff; }
+    [data-theme="dark"] .btn { color: #0b0f19; }
+    .btn:hover { background: var(--accent-hover); color: #fff; transform: translateY(-1px); }
     .btn-secondary { background: var(--border); color: var(--text); font-weight: 600; }
-    .btn-secondary:hover { opacity: 0.85; }
+    .btn-secondary:hover { opacity: 0.9; background: var(--card-border); color: var(--text); }
 
     .target-box {
       display: flex;
-      gap: 12px;
+      gap: 16px;
       align-items: center;
       background: var(--card-bg);
-      padding: 8px 14px;
-      border-radius: 6px;
-      border: 1px solid var(--border);
-      margin-bottom: 12px;
+      padding: 10px 16px;
+      border-radius: 10px;
+      border: 1px solid var(--card-border);
+      margin-bottom: 16px;
       flex-wrap: wrap;
+      box-shadow: 0 2px 4px var(--shadow);
     }
-    .target-input-item { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.85rem; }
-    .target-input-item input { width: 75px; text-align: center; font-weight: 700; }
 
-    .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
-    .tab-btn { background: none; border: none; color: var(--text-muted); padding: 6px 14px; cursor: pointer; font-weight: 700; border-bottom: 2px solid transparent; font-size: 0.85rem; }
-    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
-    .tab-btn.defaulter-tab.active { color: var(--red-text); border-bottom-color: var(--red-text); }
+    .target-input-item { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.8rem; color: var(--text-muted); }
+    .target-input-item input { width: 70px; text-align: center; font-weight: 700; }
 
-    .dropzone { border: 2px dashed var(--border); background: var(--card-bg); padding: 14px; text-align: center; border-radius: 6px; cursor: pointer; margin-bottom: 12px; font-weight: 500; }
-    .dropzone.dragover { border-color: var(--accent); background: rgba(56, 189, 248, 0.05); }
+    .tabs { 
+      display: flex; 
+      gap: 6px; 
+      border-bottom: 2px solid var(--border); 
+      margin-bottom: 16px; 
+      padding-bottom: 2px;
+    }
 
-    .table-wrapper { overflow-x: auto; background: var(--card-bg); border-radius: 6px; border: 1px solid var(--border); }
-    table { width: 100%; border-collapse: collapse; text-align: left; white-space: nowrap; font-size: 0.88rem; }
-    th, td { padding: 8px 12px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); vertical-align: middle; }
-    th:last-child, td:last-child { border-right: none; }
+    .tab-btn { 
+      background: none; 
+      border: none; 
+      color: var(--text-muted); 
+      padding: 8px 16px; 
+      cursor: pointer; 
+      font-weight: 700; 
+      border-bottom: 3px solid transparent; 
+      font-size: 0.82rem; 
+      transition: all 0.2s;
+      border-radius: 6px 6px 0 0;
+    }
+
+    .tab-btn:hover { color: var(--text); background: var(--hover-bg); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(56, 189, 248, 0.05); }
+    .tab-btn.defaulter-tab.active { color: var(--red-text); border-bottom-color: var(--red-text); background: rgba(248, 113, 113, 0.05); }
+
+    .dropzone { 
+      border: 2px dashed var(--border); 
+      background: var(--card-bg); 
+      padding: 20px; 
+      text-align: center; 
+      border-radius: 10px; 
+      cursor: pointer; 
+      margin-bottom: 16px; 
+      font-weight: 500; 
+      transition: all 0.2s;
+      box-shadow: 0 2px 4px var(--shadow);
+    }
+
+    .dropzone:hover, .dropzone.dragover { border-color: var(--accent); background: rgba(56, 189, 248, 0.03); }
+
+    .table-wrapper { 
+      overflow-x: auto; 
+      background: var(--card-bg); 
+      border-radius: 10px; 
+      border: 1px solid var(--card-border); 
+      box-shadow: 0 4px 6px -1px var(--shadow);
+    }
+
+    table { width: 100%; border-collapse: collapse; text-align: left; white-space: nowrap; font-size: 0.82rem; }
+    th, td { padding: 6px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
     
     th {
       background: var(--custom-header-bg, var(--table-header));
       color: var(--custom-header-text, var(--header-text));
       font-weight: 800;
-      cursor: grab;
+      cursor: pointer;
       user-select: none;
       text-transform: uppercase;
-      font-size: 0.78rem;
-      letter-spacing: 0.4px;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
       transition: background 0.2s;
+      padding: 10px 12px;
     }
-    th:active { cursor: grabbing; }
+
+    th:hover { opacity: 0.9; }
     th.dragging { opacity: 0.4; background: var(--accent); }
     th.drag-over { border-left: 3px solid var(--accent) !important; }
 
+    tr { transition: background 0.15s; }
     tr:hover { background: var(--hover-bg); }
 
+    /* Clean Badges Matching Sample Image */
     .badge { 
-      display: inline-block; 
-      padding: 5px 12px; 
-      border-radius: 6px; 
-      font-size: 0.95rem; 
-      font-weight: 800; 
+      display: inline-flex; 
+      align-items: center;
+      justify-content: center;
+      padding: 3px 10px; 
+      border-radius: 4px; 
+      font-size: 0.82rem; 
+      font-weight: 700; 
       text-align: center; 
-      letter-spacing: 0.3px;
     }
+
     .badge.green { background: var(--green-bg); color: var(--green-text); }
     .badge.red { background: var(--red-bg); color: var(--red-text); }
     .badge.yellow { background: var(--yellow-bg); color: var(--yellow-text); }
     .badge.blue { background: var(--blue-bg); color: var(--blue-text); }
 
     .badge.remark-tag {
-      font-size: 0.85rem;
+      font-size: 0.75rem;
       font-weight: 700;
       padding: 4px 10px;
     }
 
-    .name-cell { display: flex; flex-direction: column; }
-    .name-cell .name { font-weight: 800; color: var(--text); font-size: 0.92rem; }
-    .name-cell .mail { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; }
+    /* Counsellor Column Tight Packing */
+    .counsellor-cell, .name-cell { display: flex; flex-direction: column; justify-content: center; padding-top: 2px; padding-bottom: 2px; }
+    .counsellor-name, .name-cell .name { font-weight: 800; color: var(--text); font-size: 0.85rem; line-height: 1.1; }
+    .counsellor-email, .name-cell .mail { font-size: 0.72rem; color: var(--text-muted); font-weight: 500; line-height: 1.1; margin-top: 2px; }
 
-    .bold-data { font-weight: 800; color: var(--text); font-size: 0.92rem; }
-    .muted-data { font-weight: 600; color: var(--text-muted); }
+    .bold-data { font-weight: 700; color: var(--text); font-size: 0.85rem; }
+    .muted-data { font-weight: 500; color: var(--text-muted); }
 
     .dropdown { position: relative; }
-    .dropdown-menu { display: none; position: absolute; right: 0; top: 100%; background: var(--card-bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px; z-index: 100; max-height: 250px; overflow-y: auto; width: 180px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+    .dropdown-menu { display: none; position: absolute; right: 0; top: 100%; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; padding: 10px; z-index: 100; max-height: 280px; overflow-y: auto; width: 200px; box-shadow: 0 10px 25px -5px var(--shadow); }
     .dropdown-menu.show { display: block; }
     .col-dropdown-item { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; color: var(--text); }
 
-    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; }
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 200; }
     .overlay.open { display: block; }
-    .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--card-bg); border: 1px solid var(--border); padding: 16px; border-radius: 8px; z-index: 201; width: 90%; max-width: 500px; color: var(--text); }
+    .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--card-bg); border: 1px solid var(--card-border); padding: 20px; border-radius: 12px; z-index: 201; width: 90%; max-width: 500px; color: var(--text); box-shadow: 0 20px 25px -5px var(--shadow); }
     .modal.open { display: block; }
-    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-    .team-list { max-height: 150px; overflow-y: auto; margin-bottom: 12px; border: 1px solid var(--border); padding: 8px; border-radius: 4px; }
-    .team-item { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid var(--border); font-weight: 600; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .team-list { max-height: 160px; overflow-y: auto; margin-bottom: 12px; border: 1px solid var(--border); padding: 8px; border-radius: 6px; background: var(--bg); }
+    .team-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); font-weight: 600; font-size: 0.8rem; }
+    .team-item:last-child { border-bottom: none; }
   </style>
 </head>
 <body>
@@ -198,7 +372,9 @@
   </div>
 
   <div class="target-box">
-    <span style="font-size:0.9rem; font-weight:800; color:var(--accent);">⚙️ Set Defaulter Limits:</span>
+    <span style="font-size:0.85rem; font-weight:800; color:var(--accent); display:flex; align-items:center; gap:6px;">
+      <i class="fa-solid fa-sliders"></i> Set Defaulter Limits:
+    </span>
     
     <div class="target-input-item">
       <label>Target Eff. (>240s):</label>
@@ -247,10 +423,10 @@
     </div>
 
     <div class="control-group">
-      <label style="font-size:0.75rem; font-weight:700;">Header BG:</label>
-      <input type="color" id="headerBgPicker" value="#0f172a" title="Header Background Color" />
-      <label style="font-size:0.75rem; font-weight:700;">Header Text:</label>
-      <input type="color" id="headerTextPicker" value="#f8fafc" title="Header Text Color" />
+      <label style="font-size:0.75rem; font-weight:700; color:var(--text-muted);">Header BG:</label>
+      <input type="color" id="headerBgPicker" value="#facc15" title="Header Background Color" />
+      <label style="font-size:0.75rem; font-weight:700; color:var(--text-muted);">Text:</label>
+      <input type="color" id="headerTextPicker" value="#000000" title="Header Text Color" />
       
       <div class="dropdown" id="colToggleWrapper">
         <button class="btn btn-secondary" id="colToggleBtn">Columns ⚙️</button>
@@ -291,13 +467,13 @@
     <table>
       <thead>
         <tr>
-          <th>#</th>
-          <th>Counsellor</th>
-          <th>Manual Dial</th>
-          <th>Manual Connect</th>
-          <th>Connect %</th>
-          <th>Manual Effective (>240s)</th>
-          <th>Manual TT</th>
+          <th onclick="sortManual('rank')"># <span id="sort_m_rank"></span></th>
+          <th onclick="sortManual('name')">Counsellor <span id="sort_m_name"></span></th>
+          <th onclick="sortManual('manualDials')">Manual Dial <span id="sort_m_manualDials"></span></th>
+          <th onclick="sortManual('manualConnect')">Manual Connect <span id="sort_m_manualConnect"></span></th>
+          <th onclick="sortManual('connPct')">Connect % <span id="sort_m_connPct"></span></th>
+          <th onclick="sortManual('manualEffConnect')">Manual Effective (>240s) <span id="sort_m_manualEffConnect"></span></th>
+          <th onclick="sortManual('manualTT')">Manual TT ▾ <span id="sort_m_manualTT"></span></th>
         </tr>
       </thead>
       <tbody id="manualTbody"></tbody>
@@ -324,15 +500,15 @@
   <div class="overlay" id="overlay"></div>
   <div class="modal" id="teamModal">
     <div class="modal-header">
-      <h3 style="font-weight: 700;">Manage Team Members</h3>
-      <button class="btn btn-secondary" id="closeTeamModal">✕</button>
+      <h3 style="font-weight: 800; font-size:1.1rem;">Manage Team Members</h3>
+      <button class="btn btn-secondary" id="closeTeamModal" style="padding:4px 8px;">✕</button>
     </div>
     <div style="margin-bottom: 12px;">
-      <label style="display:block; margin-bottom: 4px; font-weight: 600;">Team Name:</label>
+      <label style="display:block; margin-bottom: 4px; font-weight: 600; font-size:0.8rem; color:var(--text-muted);">Team Name:</label>
       <input type="text" id="teamNameInput" style="width: 100%;" />
     </div>
     <div>
-      <label style="display:block; margin-bottom: 4px; font-weight: 600;">Team Members (<span id="teamMemberCount">0</span>):</label>
+      <label style="display:block; margin-bottom: 4px; font-weight: 600; font-size:0.8rem; color:var(--text-muted);">Team Members (<span id="teamMemberCount">0</span>):</label>
       <div class="team-list" id="teamList"></div>
     </div>
     <div style="display:flex; gap: 8px; margin-bottom: 12px;">
@@ -340,8 +516,8 @@
       <button class="btn" id="addMemberBtn">Add</button>
     </div>
     <div style="margin-bottom: 12px;">
-      <textarea id="bulkImportText" placeholder="Paste emails separated by commas or newlines..." style="width:100%; height:60px; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:4px; padding:6px; font-size:0.8rem; font-weight: 500;"></textarea>
-      <button class="btn btn-secondary" id="bulkImportBtn" style="width:100%; margin-top:4px;">Bulk Add Emails</button>
+      <textarea id="bulkImportText" placeholder="Paste emails separated by commas or newlines..." style="width:100%; height:60px; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:8px; font-size:0.8rem; font-weight: 500; outline:none;"></textarea>
+      <button class="btn btn-secondary" id="bulkImportBtn" style="width:100%; margin-top:6px;">Bulk Add Emails</button>
     </div>
     <div style="display: flex; justify-content: space-between;">
       <button class="btn btn-secondary" id="clearTeamBtn" style="background:var(--red-bg); color:var(--red-text);">Clear All</button>
@@ -454,9 +630,14 @@
     if (localStorage.getItem('customHeaderBg')) {
       headerBgPicker.value = localStorage.getItem('customHeaderBg');
       document.documentElement.style.setProperty('--custom-header-bg', headerBgPicker.value);
+    } else {
+      document.documentElement.style.setProperty('--custom-header-bg', headerBgPicker.value);
     }
+
     if (localStorage.getItem('customHeaderText')) {
       headerTextPicker.value = localStorage.getItem('customHeaderText');
+      document.documentElement.style.setProperty('--custom-header-text', headerTextPicker.value);
+    } else {
       document.documentElement.style.setProperty('--custom-header-text', headerTextPicker.value);
     }
 
@@ -484,6 +665,19 @@
     let currentTab = 'productivity';
     let sortKey = 'totalTT';
     let sortDir = -1;
+
+    let manualSortKey = 'manualTT';
+    let manualSortDir = -1;
+
+    function sortManual(key) {
+      if (manualSortKey === key) {
+        manualSortDir *= -1;
+      } else {
+        manualSortKey = key;
+        manualSortDir = -1;
+      }
+      render();
+    }
 
     function parseDate(dateStr) {
       if (!dateStr) return null;
@@ -585,7 +779,7 @@
 
     function render() {
       const limits = getTargetLimits();
-      document.getElementById('teamHeaderTitle').textContent = `${teamName} Hourly Productivity & Break Analysis`;
+      document.getElementById('teamHeaderTitle').textContent = `${teamName} Productivity & Break Dashboard`;
       document.getElementById('currentWindowInfo').innerHTML = `⏱️ <strong>Current Schedule Window:</strong> ${getCurrentHourlyTarget().label}`;
 
       document.getElementById('tabDefaultersBtn').textContent = `⚠️ Defaulters List (<${limits.eff} Eff / <${limits.manualMins}m Manual / <${limits.totalMins}m Total TT)`;
@@ -642,7 +836,7 @@
       const visibleCols = ALL_COLUMNS.filter(col => columnVisibility[col.id]);
 
       if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="${visibleCols.length}" style="text-align:center; padding:20px; font-weight:600;">No matching records found or CSV not uploaded yet.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="${visibleCols.length}" style="text-align:center; padding:24px; font-weight:600; color:var(--text-muted);">No matching records found or CSV not uploaded yet.</td></tr>`;
         return;
       }
 
@@ -651,7 +845,7 @@
         visibleCols.forEach(col => {
           switch (col.id) {
             case 'rank': cellsHTML += `<td class="bold-data">${i + 1}</td>`; break;
-            case 'name': cellsHTML += `<td class="name-cell"><span class="name">${a.name || a.email}</span><span class="mail">${a.email}</span></td>`; break;
+            case 'name': cellsHTML += `<td class="counsellor-cell"><span class="counsellor-name">${a.name || a.email}</span><span class="counsellor-email">${a.email}</span></td>`; break;
             case 'status': cellsHTML += `<td><span class="badge ${a.statusColor}">${a.status}</span></td>`; break;
             case 'totalTT': {
               const tTT = a.totalTT || 0;
@@ -701,7 +895,7 @@
 
       const tbody = document.getElementById('breakTbody');
       if (logs.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; font-weight:600;">No break logs recorded.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:24px; font-weight:600; color:var(--text-muted);">No break logs recorded.</td></tr>`;
         return;
       }
 
@@ -713,7 +907,7 @@
         return `
           <tr>
             <td class="bold-data">${i + 1}</td>
-            <td class="name-cell"><span class="name">${b.name}</span><span class="mail">${b.email}</span></td>
+            <td class="counsellor-cell"><span class="counsellor-name">${b.name}</span><span class="counsellor-email">${b.email}</span></td>
             <td class="muted-data">${b.start}</td>
             <td class="muted-data">${b.end}</td>
             <td class="bold-data">${b.duration} mins</td>
@@ -730,9 +924,44 @@
         filtered = filtered.filter(a => (a.name || '').toLowerCase().includes(search) || a.email.toLowerCase().includes(search));
       }
 
+      filtered.forEach(a => {
+        const mDial = a.manualDials || 0;
+        const mConn = a.manualConnect || 0;
+        a.connPct = mDial > 0 ? (mConn / mDial) : 0;
+      });
+
+      filtered.sort((a, b) => {
+        let va = a[manualSortKey];
+        let vb = b[manualSortKey];
+
+        if (manualSortKey === 'name') {
+          va = (a.name || a.email).toLowerCase();
+          vb = (b.name || b.email).toLowerCase();
+        } else if (manualSortKey === 'rank') {
+          va = data.indexOf(a);
+          vb = data.indexOf(b);
+        }
+
+        if (va < vb) return -1 * manualSortDir;
+        if (va > vb) return 1 * manualSortDir;
+        return 0;
+      });
+
+      const sortKeys = ['rank', 'name', 'manualDials', 'manualConnect', 'connPct', 'manualEffConnect', 'manualTT'];
+      sortKeys.forEach(k => {
+        const span = document.getElementById(`sort_m_${k}`);
+        if (span) {
+          if (manualSortKey === k) {
+            span.textContent = manualSortDir === 1 ? '▲' : '▼';
+          } else {
+            span.textContent = '';
+          }
+        }
+      });
+
       const tbody = document.getElementById('manualTbody');
       if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; font-weight:600;">No data found.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:24px; font-weight:600; color:var(--text-muted);">No data found.</td></tr>`;
         return;
       }
 
@@ -741,18 +970,18 @@
         const mDial = a.manualDials || 0;
         const mConn = a.manualConnect || 0;
         const manualEff = a.manualEffConnect || 0;
-        const connPct = mDial > 0 ? ((mConn / mDial) * 100).toFixed(1) + '%' : '0.0%';
+        const connPctStr = (a.connPct * 100).toFixed(1) + '%';
 
         const mClass = mTT >= limits.manualSecs ? 'badge green' : 'badge red';
-        const effClass = manualEff >= limits.eff ? 'badge green' : 'badge red';
+        const effClass = manualEff >= limits.eff ? 'badge red' : 'badge red';
 
         return `
           <tr>
             <td class="bold-data">${i + 1}</td>
-            <td class="name-cell"><span class="name">${a.name || a.email}</span><span class="mail">${a.email}</span></td>
+            <td class="counsellor-cell"><span class="counsellor-name">${a.name || a.email}</span><span class="counsellor-email">${a.email}</span></td>
             <td class="bold-data">${mDial}</td>
-            <td class="bold-data" style="color:var(--green-text);">${mConn}</td>
-            <td class="bold-data">${connPct}</td>
+            <td class="bold-data">${mConn}</td>
+            <td class="bold-data">${connPctStr}</td>
             <td><span class="${effClass}">${manualEff}</span></td>
             <td><span class="${mClass}">${fmtHMS(mTT)}</span></td>
           </tr>
@@ -777,7 +1006,7 @@
 
       const tbody = document.getElementById('defaulterTbody');
       if (defaultersList.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; font-weight:600; color:var(--green-text);">🎉 Great Job! All targets met.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:24px; font-weight:700; color:var(--green-text);">🎉 Great Job! All targets met.</td></tr>`;
         return;
       }
 
@@ -792,7 +1021,7 @@
         return `
           <tr>
             <td class="bold-data">${i + 1}</td>
-            <td class="name-cell"><span class="name">${a.name || a.email}</span><span class="mail">${a.email}</span></td>
+            <td class="counsellor-cell"><span class="counsellor-name">${a.name || a.email}</span><span class="counsellor-email">${a.email}</span></td>
             <td><span class="badge ${a.totalTT < limits.totalSecs ? 'red' : 'green'}">${fmtHMS(a.totalTT)}</span></td>
             <td><span class="badge ${(a.manualTT || 0) < limits.manualSecs ? 'red' : 'green'}">${fmtHMS(a.manualTT || 0)}</span></td>
             <td><span class="badge ${a.effConnect < limits.eff ? 'red' : 'green'}">${a.effConnect}</span></td>
@@ -850,7 +1079,6 @@
               totalTT += c.ttSec;
               const isManual = !c.dialType.includes('AUTO');
 
-              // Total Effective Calls (>240s) across all calls
               if (c.ttSec >= 240) effConnect++;
 
               if (!isManual) {
@@ -860,7 +1088,6 @@
                 manualDials++;
                 manualTT += c.ttSec;
                 if (c.sysDisp === 'CONNECTED') manualConnect++;
-                // Manual Effective Calls (>240s) only for Manual Dials
                 if (c.ttSec >= 240) manualEffConnect++;
               }
 
@@ -903,7 +1130,6 @@
           rawDump = processedSummary;
           rawBreakLogs = allBreakLogs;
 
-          // Storage Update logic
           localStorage.setItem('productivity_dataset', JSON.stringify(rawDump));
           localStorage.setItem('break_logs', JSON.stringify(rawBreakLogs));
 
